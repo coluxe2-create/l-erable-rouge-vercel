@@ -103,7 +103,7 @@ export const api = {
     getAll: async (): Promise<Reservation[]> => {
       const { data, error } = await supabase
         .from('reservations')
-        .select('*')
+        .select('id, user_id, reservation_date, reservation_time, number_of_guests, status, special_requests, first_name, phone, created_at')
         .order('reservation_date', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -113,19 +113,19 @@ export const api = {
       if (!user) return [];
       const { data, error } = await supabase
         .from('reservations')
-        .select('*')
+        .select('id, user_id, reservation_date, reservation_time, number_of_guests, status, special_requests, first_name, phone, created_at')
         .eq('user_id', user.id)
         .order('reservation_date', { ascending: false });
       if (error) throw error;
       return data || [];
     },
     create: async (resData: any) => {
-      const { data, error } = await supabase.from('reservations').insert([resData]).select();
+      const { data, error } = await supabase.from('reservations').insert([resData]).select('id');
       if (error) throw error;
       return data[0];
     },
     updateStatus: async (id: string, status: string) => {
-      const { data, error } = await supabase.from('reservations').update({ status }).eq('id', id).select();
+      const { data, error } = await supabase.from('reservations').update({ status }).eq('id', id).select('id');
       if (error) throw error;
       return data[0];
     },

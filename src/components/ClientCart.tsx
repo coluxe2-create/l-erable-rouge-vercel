@@ -68,6 +68,14 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [lastOrderTotal, setLastOrderTotal] = useState(0);
+
+  useEffect(() => {
+    if (orderSuccess) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [orderSuccess]);
+
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
   const [geocoding, setGeocoding] = useState(false);
@@ -140,6 +148,7 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
 
       if (itemsError) throw itemsError;
 
+      setLastOrderTotal(finalTotal);
       setOrderSuccess(true);
       clearCart();
     } catch (err: any) {
@@ -164,7 +173,7 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
           <h1 className="text-4xl font-serif italic text-main-text">Merci pour votre commande !</h1>
           <p className="text-secondary-text leading-relaxed">
             Votre commande a été reçue et est en cours de préparation. <br/>
-            <span className="font-bold text-main-text">Vous paierez {finalTotal.toFixed(0)} MAD à la réception de votre commande.</span>
+            <span className="font-bold text-main-text">Vous paierez {lastOrderTotal.toFixed(0)} MAD à la réception de votre commande.</span>
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">

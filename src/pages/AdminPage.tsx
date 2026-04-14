@@ -1077,7 +1077,10 @@ function ReservationsView() {
   }, []);
 
   const fetchReservations = async () => {
-    const { data } = await supabase.from('reservations').select('*').order('reservation_date', { ascending: false });
+    const { data } = await supabase
+      .from('reservations')
+      .select('id, user_id, reservation_date, reservation_time, number_of_guests, status, special_requests, first_name, phone, created_at')
+      .order('reservation_date', { ascending: false });
     if (data) setReservations(data);
     setLoading(false);
   };

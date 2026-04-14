@@ -32,6 +32,12 @@ export default function ClientReservation({ onNavigate, user }: ClientReservatio
   const [success, setSuccess] = useState(false);
 
   React.useEffect(() => {
+    if (success) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [success]);
+
+  React.useEffect(() => {
     if (user) {
       setFormData(prev => ({
         ...prev,
@@ -45,12 +51,16 @@ export default function ClientReservation({ onNavigate, user }: ClientReservatio
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.reservations.create({
-        ...formData,
+      const reservationData = {
+        reservation_date: formData.reservation_date,
+        reservation_time: formData.reservation_time,
         number_of_guests: parseInt(formData.number_of_guests),
+        special_requests: formData.special_requests,
         first_name: formData.name,
-        phone: formData.phone
-      });
+        phone: formData.phone,
+        user_id: user?.id
+      };
+      await api.reservations.create(reservationData);
       setSuccess(true);
     } catch (err) {
       console.error(err);

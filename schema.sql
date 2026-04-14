@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE TABLE IF NOT EXISTS reservations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    first_name VARCHAR(100),
+    phone VARCHAR(20),
     reservation_date DATE NOT NULL,
     reservation_time TIME NOT NULL,
     number_of_guests INTEGER NOT NULL CHECK (number_of_guests > 0),
