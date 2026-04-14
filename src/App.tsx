@@ -87,10 +87,17 @@ export default function App() {
 
         if (cats) setCategories(cats);
         if (prods) {
-          const mappedProds: MenuItem[] = prods.map(p => ({
-            ...p,
-            category_name: p.categories?.name
-          }));
+          const mappedProds: MenuItem[] = prods
+            .map(p => ({
+              ...p,
+              category_name: p.categories?.name
+            }))
+            .sort((a: any, b: any) => {
+              const orderA = a.categories?.order_index ?? 999;
+              const orderB = b.categories?.order_index ?? 999;
+              if (orderA !== orderB) return orderA - orderB;
+              return a.name.localeCompare(b.name);
+            });
           setProducts(mappedProds);
         }
       } catch (err) {
