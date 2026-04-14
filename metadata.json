@@ -1,0 +1,5 @@
+{
+  "name": "L'Érable Rouge",
+  "description": "Application de gestion pour le restaurant L'Érable Rouge, incluant le menu, les commandes, les réservations et les livraisons.",
+  "requestFramePermissions": []
+}
