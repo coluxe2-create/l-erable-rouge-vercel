@@ -18,6 +18,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'menu' | 'reservation' | 'cart' | 'payment-success' | 'payment-failure' | 'admin'>('home');
+  const [menuInitialCategory, setMenuInitialCategory] = useState<string | null>(null);
 
   const [appMode, setAppMode] = useState<'admin' | 'client'>('client');
 
@@ -143,8 +144,13 @@ export default function App() {
     window.history.pushState({}, '', '/');
   };
 
-  const navigateTo = (page: any) => {
+  const navigateTo = (page: any, categoryId?: string) => {
     setCurrentPage(page);
+    if (page === 'menu') {
+      setMenuInitialCategory(categoryId || null);
+    } else {
+      setMenuInitialCategory(null);
+    }
     // Update URL without reloading for better DX
     const path = page === 'home' ? '/' : `/${page}`;
     window.history.pushState({}, '', path);
@@ -161,7 +167,15 @@ export default function App() {
   const renderContent = () => {
     switch (currentPage) {
       case 'home': return <ClientHome onNavigate={navigateTo} categories={categories} />;
-      case 'menu': return <ClientMenu categories={categories} products={products} loading={loading} />;
+      case 'menu': return (
+        <ClientMenu 
+          categories={categories} 
+          products={products} 
+          loading={loading} 
+          initialCategory={menuInitialCategory}
+          onCategoryReset={() => setMenuInitialCategory(null)}
+        />
+      );
       case 'reservation': return <ClientReservation onNavigate={navigateTo} user={user} />;
       case 'cart': return <ClientCart onNavigate={navigateTo} user={user} />;
       case 'payment-success': return <PaymentSuccess />;

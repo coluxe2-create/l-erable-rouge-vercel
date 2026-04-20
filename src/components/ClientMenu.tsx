@@ -18,13 +18,19 @@ interface ClientMenuProps {
   categories: Category[];
   products: MenuItem[];
   loading: boolean;
+  initialCategory?: string | null;
+  onCategoryReset?: () => void;
 }
 
-export default function ClientMenu({ categories, products, loading }: ClientMenuProps) {
+export default function ClientMenu({ categories, products, loading, initialCategory, onCategoryReset }: ClientMenuProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const { addToCart } = useCart();
   const [addedId, setAddedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedCategory(initialCategory || 'all');
+  }, [initialCategory]);
 
   const handleAddToCart = (item: MenuItem) => {
     addToCart(item);

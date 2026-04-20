@@ -163,13 +163,16 @@ export default function ClientLayout({ children, activePage, setActivePage, user
         whileHover={{ backgroundColor: '#6B1414' }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setActivePage('reservation')}
-        className="fixed bottom-0 left-0 right-0 md:bottom-8 md:right-8 md:left-auto z-[100] bg-accent-red text-white p-3 md:px-8 md:py-4 shadow-[0_-10px_30px_rgba(139,26,26,0.15)] md:shadow-[0_20px_40px_rgba(139,26,26,0.3)] flex items-center justify-center gap-4 group transition-all duration-500 w-full md:w-auto"
+        className="fixed bottom-0 left-0 right-0 z-[100] bg-accent-red text-white flex items-center justify-center gap-3 transition-all duration-300 w-full h-12 md:h-14 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] rounded-none"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="w-8 h-8 border border-white/20 flex items-center justify-center group-hover:border-white/40 transition-colors hidden md:flex">
-          <Calendar className="w-4 h-4" />
-        </div>
-        <span className="text-[13px] md:text-[10px] font-sans font-bold uppercase tracking-[0.3em] md:tracking-[0.2em]">Réserver une table</span>
+        <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+        <span className="text-[11px] md:text-sm font-sans font-bold uppercase tracking-[0.2em] md:tracking-[0.3em]">Réserver une table</span>
       </motion.button>
+
+      {/* Main Content Padding to avoid overlap with bottom bar */}
+      <div className="h-12 md:h-14" /> 
+
 
       {/* Footer */}
       <footer className="bg-white text-secondary-text py-24 px-8 border-t border-border-color">

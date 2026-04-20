@@ -264,7 +264,10 @@ export default function ClientHome({ onNavigate, categories }: ClientHomeProps) 
               transition={{ duration: 0.5, delay: i * 0.1 }}
               whileHover={{ y: -15 }}
               className="group cursor-pointer"
-              onClick={() => onNavigate('menu')}
+              onClick={() => {
+                const found = categories.find(c => c.name === cat.name);
+                onNavigate('menu', found?.id);
+              }}
             >
               <div className="relative aspect-[3/4] md:aspect-[3/4] h-[180px] md:h-auto overflow-hidden mb-6 md:mb-8 border border-border-color p-1 md:p-2 bg-white">
                 <img 
