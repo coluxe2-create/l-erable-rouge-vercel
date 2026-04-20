@@ -23,6 +23,7 @@ import L from 'leaflet';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import { api } from '../services/api';
+import { sendTelegramNotification, formatOrderMessage } from '../services/telegram';
 
 // Fix Leaflet icon issues in Vite
 const markerIcon2x = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png';
@@ -147,6 +148,20 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Envoyer notification Telegram
+      try {
+        // Associer les noms des produits pour la notification
+        const notificationItems = items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          unit_price: item.price
+        }));
+        const message = formatOrderMessage(orderData, notificationItems);
+        await sendTelegramNotification(message);
+      } catch (tgErr) {
+        console.error('Erreur notification Telegram:', tgErr);
+      }
 
       setLastOrderTotal(finalTotal);
       setOrderSuccess(true);

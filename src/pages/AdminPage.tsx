@@ -35,6 +35,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { api } from '../services/api';
 import { MenuItem, Category, Order, Reservation } from '../types';
+import { sendTelegramNotification } from '../services/telegram';
 
 // --- ADMIN LOGIN COMPONENT ---
 function AdminLogin({ onLogin }: { onLogin: (token: string, user: any) => void }) {
@@ -754,7 +755,24 @@ function OrdersView() {
   }, []);
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from('orders').update({ status }).eq('id', id);
+    const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+    
+    if (!error) {
+      const statusLabels: Record<string, string> = {
+        'en_preparation': '🔵 En préparation',
+        'en_route': '🛵 En route',
+        'livre': '✅ Livré',
+        'annule': '❌ Annulé'
+      };
+
+      try {
+        await sendTelegramNotification(
+          `🍁 <b>L'Érable Rouge</b>\n\nCommande #${id.slice(-4)} → ${statusLabels[status] || status}`
+        );
+      } catch (tgErr) {
+        console.error('Erreur Telegram:', tgErr);
+      }
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#8B1A1A]" /></div>;
