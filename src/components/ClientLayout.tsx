@@ -163,11 +163,16 @@ export default function ClientLayout({ children, activePage, setActivePage, user
         whileHover={{ backgroundColor: '#6B1414' }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setActivePage('reservation')}
-        className="fixed bottom-0 left-0 right-0 z-[100] bg-accent-red text-white flex items-center justify-center gap-3 transition-all duration-300 w-full h-12 md:h-14 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] rounded-none"
+        className="fixed bottom-0 left-0 right-0 z-[100] bg-accent-red text-white flex items-center justify-center transition-all duration-300 w-full h-12 md:h-14 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] rounded-none"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <Calendar className="w-4 h-4 md:w-5 md:h-5" />
-        <span className="text-[11px] md:text-sm font-sans font-bold uppercase tracking-[0.2em] md:tracking-[0.3em]">Réserver une table</span>
+        <div className="relative flex items-center justify-center w-full max-w-lg px-4">
+          <Calendar className="w-4 h-4 md:w-5 md:h-5 absolute left-8 md:static md:mr-4" />
+          <span className="text-[11px] md:text-sm font-sans font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex-1 text-center">
+            Réserver une table
+          </span>
+          <div className="w-4 h-4 md:w-5 md:h-5 absolute right-8 md:hidden" /> {/* Spacer for centering on mobile */}
+        </div>
       </motion.button>
 
       {/* Main Content Padding to avoid overlap with bottom bar */}
