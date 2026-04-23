@@ -9,7 +9,8 @@ import {
   Menu as MenuIcon, 
   X,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Instagram
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
@@ -202,9 +203,24 @@ export default function ClientLayout({ children, activePage, setActivePage, user
               Une expérience gastronomique unique à Hay Mohammadi, Agadir, mêlant tradition marocaine et modernité raffinée.
             </p>
             <div className="flex gap-6">
-              <div className="w-10 h-10 border border-border-color flex items-center justify-center hover:border-accent-red transition-colors cursor-pointer">
-                <span className="text-[10px] uppercase tracking-widest font-sans">IG</span>
-              </div>
+              <a 
+                href="https://www.instagram.com/lerablerouge.agadir?igsh=bDA3dXE2cmxvbTcw"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
+                  color: 'white',
+                  textDecoration: 'none'
+                }}
+              >
+                <Instagram size={22} color="white" />
+              </a>
               <div className="w-10 h-10 border border-border-color flex items-center justify-center hover:border-accent-red transition-colors cursor-pointer">
                 <span className="text-[10px] uppercase tracking-widest font-sans">FB</span>
               </div>
@@ -215,11 +231,27 @@ export default function ClientLayout({ children, activePage, setActivePage, user
           </div>
           <div>
             <h4 className="text-main-text font-sans font-bold mb-8 uppercase tracking-[0.2em] text-[10px]">Contact</h4>
-            <ul className="space-y-5 text-sm font-serif italic">
-              <li>Hay Mohammadi, Agadir, 80016, Maroc</li>
-              <li>+212 528-XX-XX-XX</li>
-              <li>contact@lerable-rouge.ma</li>
-            </ul>
+            <div className="space-y-5 text-sm font-serif italic">
+              <p>Hay Mohammadi, Agadir, 80016, Maroc</p>
+              <div>
+                <a href="tel:+212808687414" style={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none'
+                }}>
+                  📞 +212 808 687 414
+                </a>
+                <a href="tel:+212661244163" style={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  marginTop: 4
+                }}>
+                  📞 +212 661 244 163
+                </a>
+              </div>
+              <p>contact@lerable-rouge.ma</p>
+            </div>
           </div>
           <div>
             <h4 className="text-main-text font-sans font-bold mb-8 uppercase tracking-[0.2em] text-[10px]">Horaires</h4>

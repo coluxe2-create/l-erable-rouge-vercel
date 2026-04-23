@@ -52,6 +52,9 @@ export default function ClientMenu({ categories, products, loading, initialCateg
       case 'Burgers': return '🍔';
       case 'Pasta au Choix': return '🍝';
       case 'Boissons Divers': return '🥤';
+      case 'Brunchs': return '🥞';
+      case 'Desserts': return '🍰';
+      case 'Formule Goûter': return '🫖';
       default: return '🍽️';
     }
   };

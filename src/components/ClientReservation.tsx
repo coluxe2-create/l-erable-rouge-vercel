@@ -136,7 +136,11 @@ export default function ClientReservation({ onNavigate, user }: ClientReservatio
               </div>
               <div className="space-y-2">
                 <h3 className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-main-text">Contact Direct</h3>
-                <p className="text-secondary-text font-serif italic text-sm">Besoin d'assistance ? <br/> +212 528-XX-XX-XX</p>
+                <div className="text-secondary-text font-serif italic text-sm space-y-1">
+                  <p>Besoin d'assistance ?</p>
+                  <a href="tel:+212808687414" className="block hover:text-accent-red transition-colors">📞 +212 808 687 414</a>
+                  <a href="tel:+212661244163" className="block hover:text-accent-red transition-colors">📞 +212 661 244 163</a>
+                </div>
               </div>
             </div>
           </div>
