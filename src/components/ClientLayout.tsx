@@ -157,26 +157,40 @@ export default function ClientLayout({ children, activePage, setActivePage, user
       </main>
 
       {/* Sticky Reservation Button */}
-      <motion.button
+      <motion.div
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ backgroundColor: '#6B1414' }}
-        whileTap={{ scale: 0.98 }}
         onClick={() => setActivePage('reservation')}
-        className="fixed bottom-0 left-0 right-0 z-[100] bg-accent-red text-white flex items-center justify-center transition-all duration-300 w-full h-12 md:h-14 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] rounded-none"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#8B1A1A',
+          padding: '16px',
+          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          zIndex: 100,
+          cursor: 'pointer'
+        }}
       >
-        <div className="relative flex items-center justify-center w-full max-w-lg px-4">
-          <Calendar className="w-4 h-4 md:w-5 md:h-5 absolute left-8 md:static md:mr-4" />
-          <span className="text-[11px] md:text-sm font-sans font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex-1 text-center">
-            Réserver une table
-          </span>
-          <div className="w-4 h-4 md:w-5 md:h-5 absolute right-8 md:hidden" /> {/* Spacer for centering on mobile */}
-        </div>
-      </motion.button>
+        <Calendar size={20} color="#FFF8F0" />
+        <span style={{
+          color: '#FFF8F0',
+          fontWeight: 'bold',
+          fontSize: 14,
+          letterSpacing: '0.15em',
+          textAlign: 'center'
+        }}>
+          RÉSERVER UNE TABLE
+        </span>
+      </motion.div>
 
       {/* Main Content Padding to avoid overlap with bottom bar */}
-      <div className="h-12 md:h-14" /> 
+      <div className="h-16 md:h-20" /> 
 
 
       {/* Footer */}
@@ -203,7 +217,7 @@ export default function ClientLayout({ children, activePage, setActivePage, user
             <h4 className="text-main-text font-sans font-bold mb-8 uppercase tracking-[0.2em] text-[10px]">Contact</h4>
             <ul className="space-y-5 text-sm font-serif italic">
               <li>Hay Mohammadi, Agadir, 80016, Maroc</li>
-              <li>+212 5 28 XX XX XX</li>
+              <li>+212 528-XX-XX-XX</li>
               <li>contact@lerable-rouge.ma</li>
             </ul>
           </div>

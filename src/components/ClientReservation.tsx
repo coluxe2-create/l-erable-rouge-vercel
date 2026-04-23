@@ -136,7 +136,7 @@ export default function ClientReservation({ onNavigate, user }: ClientReservatio
               </div>
               <div className="space-y-2">
                 <h3 className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-main-text">Contact Direct</h3>
-                <p className="text-secondary-text font-serif italic text-sm">Besoin d'assistance ? <br/> +212 5 28 XX XX XX</p>
+                <p className="text-secondary-text font-serif italic text-sm">Besoin d'assistance ? <br/> +212 528-XX-XX-XX</p>
               </div>
             </div>
           </div>
