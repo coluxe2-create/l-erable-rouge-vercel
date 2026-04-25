@@ -66,7 +66,6 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [lastOrderTotal, setLastOrderTotal] = useState(0);
@@ -142,7 +141,7 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
         total_price: finalTotal,
         status: 'en_attente',
         payment_method: paymentMethod,
-        special_notes: notes.trim(),
+        special_notes: '',
       };
 
       // 1. Créer la commande
@@ -451,15 +450,6 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
                         className="elegant-input w-full pl-14 pr-6 py-5 text-xs"
                       />
                     </div>
-                  </div>
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Notes spéciales</label>
-                    <textarea
-                      placeholder="Instructions pour la cuisine ou le livreur..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="elegant-input w-full px-6 py-5 h-24 resize-none text-xs"
-                    />
                   </div>
                 </div>
               )}
