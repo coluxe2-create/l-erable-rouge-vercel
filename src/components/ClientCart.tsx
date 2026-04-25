@@ -9,10 +9,12 @@ import {
   Store, 
   MapPin, 
   Phone, 
+  User,
   CheckCircle2,
   Loader2,
   ChevronRight,
   ArrowLeft,
+  Navigation,
   CreditCard,
   Lock
 } from 'lucide-react';
@@ -20,6 +22,8 @@ import { MapContainer, TileLayer, Marker, useMapEvents, Popup } from 'react-leaf
 import L from 'leaflet';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
+import { api } from '../services/api';
+import { sendTelegramNotification, formatOrderMessage } from '../services/telegram';
 
 // Fix Leaflet icon issues in Vite
 const markerIcon2x = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png';
@@ -33,7 +37,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const RESTAURANT_POS: [number, number] = [30.4374353, -9.5677936];
+const RESTAURANT_POS: [number, number] = [30.4374353, -9.5677936]; // Avenue Larache, Agadir
 const AGADIR_CENTER: [number, number] = [30.4374353, -9.5677936];
 
 interface ClientCartProps {
@@ -56,32 +60,36 @@ function LocationMarker({ onLocationSelect, position }: { onLocationSelect: (lat
 }
 
 export default function ClientCart({ onNavigate, user }: ClientCartProps) {
-  const { items: cartItems, updateQuantity, removeFromCart, total, clearCart } = useCart();
-  
-  // Correction 4: States manquants et unifiés
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderConfirmed, setOrderConfirmed] = useState(false);
-  const [deliveryMode, setDeliveryMode] = useState('livraison');
-  const [paymentMethod, setPaymentMethod] = useState('especes');
-  const [formData, setFormData] = useState({
-    firstName: '',
-    phone: '',
-    address: '',
-    notes: '',
-  });
+  const { items, updateQuantity, removeFromCart, total, clearCart } = useCart();
+  const [orderType, setOrderType] = useState<'livraison' | 'sur place'>('livraison');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'carte'>('cash');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [lastOrderTotal, setLastOrderTotal] = useState(0);
 
+  useEffect(() => {
+    if (orderSuccess) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [orderSuccess]);
+
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
-        ...prev,
-        firstName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email.split('@')[0],
-        phone: user.phone || ''
-      }));
+      setFirstName(`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email.split('@')[0]);
+      setPhone(user.phone || '');
     }
   }, [user]);
+
+  const finalTotal = total;
 
   const handleLocationSelect = async (lat: number, lng: number) => {
     setMapPosition([lat, lng]);
@@ -90,7 +98,7 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
       const data = await response.json();
       if (data.display_name) {
-        setFormData(prev => ({ ...prev, address: data.display_name }));
+        setAddress(data.display_name);
       }
     } catch (error) {
       console.error('Geocoding error:', error);
@@ -99,69 +107,36 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
     }
   };
 
-  // Correction 2: handleSubmitOrder optimisée
-  const handleSubmitOrder = async () => {
-    // Vérifications de base
-    if (cartItems.length === 0) {
-      alert('Votre panier est vide');
-      return;
-    }
-    
-    if (!formData.firstName || formData.firstName.trim() === '') {
-      alert('Veuillez entrer votre prénom');
-      return;
-    }
-    
-    if (!formData.phone || formData.phone.trim() === '') {
-      alert('Veuillez entrer votre numéro de téléphone');
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (items.length === 0) return;
 
-    if (deliveryMode === 'livraison' && (!formData.address || formData.address.trim() === '')) {
-      alert('Veuillez entrer votre adresse de livraison');
-      return;
-    }
-
-    setIsSubmitting(true);
-
+    setSubmitting(true);
+    setError('');
     try {
-      // Calculer le total
-      const totalAmount = cartItems.reduce(
-        (sum, item) => sum + (item.price * item.quantity), 0
-      );
-
-      // 1. Créer la commande
       const orderData = {
         user_id: user?.id || null,
-        first_name: formData.firstName.trim(),
-        phone: formData.phone.trim(),
-        delivery_address: deliveryMode === 'livraison' ? formData.address.trim() : 'Sur place',
-        mode: deliveryMode,
-        total_price: Math.round(totalAmount),
+        first_name: firstName || 'Client',
+        phone: phone || '',
+        delivery_address: orderType === 'livraison' ? address : '',
+        mode: orderType,
+        total_price: finalTotal,
         status: 'en_attente',
         payment_method: paymentMethod,
-        special_notes: formData.notes?.trim() || '',
+        special_notes: notes || '',
       };
 
-      console.log('Création commande:', orderData);
-
+      // 1. Créer la commande
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert(orderData)
         .select()
         .single();
 
-      if (orderError) {
-        console.error('Erreur commande:', orderError);
-        alert('Erreur: ' + orderError.message);
-        setIsSubmitting(false);
-        return;
-      }
+      if (orderError) throw orderError;
 
-      console.log('Commande créée:', order);
-
-      // 2. Créer les order_items
-      const orderItems = cartItems.map(item => ({
+      // 2. Créer les items de la commande
+      const orderItems = items.map(item => ({
         order_id: order.id,
         product_id: item.id,
         quantity: item.quantity,
@@ -172,101 +147,63 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) {
-        console.error('Erreur items:', itemsError);
-      }
+      if (itemsError) throw itemsError;
 
-      // 3. Notification Telegram
+      // Envoyer notification Telegram
       try {
-        const itemsList = cartItems.map(item =>
-          `• ${item.name} x${item.quantity} — ${Math.round(item.price * item.quantity)} MAD`
-        ).join('\n');
-
-        const message = `🍁 NOUVELLE COMMANDE\n\n👤 ${orderData.first_name}\n📞 ${orderData.phone}\n🚗 ${orderData.mode}\n📍 ${orderData.delivery_address}\n\n${itemsList}\n\n💰 TOTAL: ${Math.round(totalAmount)} MAD`;
-
-        await fetch(
-          `https://api.telegram.org/bot${import.meta.env.VITE_TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: '8642890342', // ID du chat admin
-              text: message,
-            })
-          }
-        );
-      } catch (telegramError) {
-        console.warn('Telegram non envoyé:', telegramError);
+        // Associer les noms des produits pour la notification
+        const notificationItems = items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          unit_price: item.price
+        }));
+        const message = formatOrderMessage(orderData, notificationItems);
+        await sendTelegramNotification(message);
+      } catch (tgErr) {
+        console.error('Erreur notification Telegram:', tgErr);
       }
 
-      // 4. Succès — vider le panier
+      setLastOrderTotal(finalTotal);
+      setOrderSuccess(true);
       clearCart();
-      setOrderConfirmed(true);
-      
-      // alert('✅ Commande confirmée ! Nous vous contacterons bientôt.')
-
     } catch (err: any) {
-      console.error('Erreur inattendue:', err);
-      alert('Erreur inattendue. Réessayez.');
+      console.error(err);
+      setError(err.message || 'Erreur lors de la commande');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  // Correction 5: Page de confirmation
-  if (orderConfirmed) {
+  if (orderSuccess) {
     return (
-      <div style={{
-        textAlign: 'center',
-        padding: 40,
-        minHeight: '60vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 20
-      }}>
-        <motion.div 
-          initial={{ scale: 0 }} 
-          animate={{ scale: 1 }} 
-          style={{ fontSize: 64 }}
+      <div className="max-w-xl mx-auto px-6 py-24 text-center space-y-8">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500 shadow-xl shadow-emerald-500/20"
         >
-          ✅
+          <CheckCircle2 className="w-12 h-12" />
         </motion.div>
-        <h2 style={{
-          color: '#8B1A1A',
-          fontSize: 24,
-          fontWeight: 'bold'
-        }}>
-          Commande confirmée !
-        </h2>
-        <p style={{ color: '#666', fontSize: 16 }}>
-          Nous vous contacterons bientôt au <span style={{ fontWeight: 'bold' }}>{formData.phone}</span>
-        </p>
-        <button
-          onClick={() => {
-            setOrderConfirmed(false);
-            onNavigate('home');
-          }}
-          style={{
-            backgroundColor: '#8B1A1A',
-            color: 'white',
-            padding: '14px 32px',
-            borderRadius: 10,
-            border: 'none',
-            fontSize: 16,
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            marginTop: 20
-          }}
-        >
-          Retour à l'accueil
-        </button>
+        <div className="space-y-4">
+          <h1 className="text-4xl font-serif italic text-main-text">Merci pour votre commande !</h1>
+          <p className="text-secondary-text leading-relaxed">
+            Votre commande a été reçue et est en cours de préparation. <br/>
+            <span className="font-bold text-main-text">Vous paierez {lastOrderTotal.toFixed(0)} MAD à la réception de votre commande.</span>
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+          <button 
+            onClick={() => onNavigate('home')}
+            className="bg-primary-red text-white font-bold py-4 px-8 rounded-2xl hover:bg-secondary-red transition-all shadow-lg shadow-primary-red/20"
+          >
+            Retour à l'accueil
+          </button>
+        </div>
       </div>
     );
   }
 
-  if (cartItems.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="max-w-xl mx-auto px-6 py-32 text-center space-y-8">
         <div className="w-24 h-24 bg-card-bg rounded-full flex items-center justify-center mx-auto text-secondary-text/20 border border-border-color">
@@ -304,11 +241,11 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
         <div className="lg:col-span-2 space-y-10">
           <div className="bg-white border border-border-color shadow-[0_20px_40px_rgba(232,224,216,0.1)]">
             <div className="p-8 border-b border-border-color bg-bg-off-white flex items-center justify-between">
-              <h2 className="text-main-text font-sans font-bold uppercase tracking-[0.2em] text-[10px]">Articles ({cartItems.length})</h2>
+              <h2 className="text-main-text font-sans font-bold uppercase tracking-[0.2em] text-[10px]">Articles ({items.length})</h2>
               <button onClick={clearCart} className="text-accent-red text-[10px] font-sans font-bold uppercase tracking-[0.2em] hover:opacity-70 transition-opacity">Vider le panier</button>
             </div>
             <div className="divide-y divide-border-color">
-              {cartItems.map((item) => (
+              {items.map((item) => (
                 <div key={item.id} className="p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-8 hover:bg-bg-off-white transition-colors duration-500">
                   <div className="flex items-center gap-8">
                     <div className="w-24 h-24 border border-border-color p-1 bg-white flex-shrink-0">
@@ -361,18 +298,18 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
             
             <div className="flex p-1 bg-bg-off-white border border-border-color">
               <button
-                onClick={() => setDeliveryMode('livraison')}
+                onClick={() => setOrderType('livraison')}
                 className={`flex-1 flex items-center justify-center gap-3 py-4 text-[10px] font-sans font-bold uppercase tracking-[0.2em] transition-all duration-500 ${
-                  deliveryMode === 'livraison' ? 'bg-white text-accent-red border border-border-color shadow-sm' : 'text-secondary-text'
+                  orderType === 'livraison' ? 'bg-white text-accent-red border border-border-color shadow-sm' : 'text-secondary-text'
                 }`}
               >
                 <Truck className="w-4 h-4" />
                 Livraison
               </button>
               <button
-                onClick={() => setDeliveryMode('sur place')}
+                onClick={() => setOrderType('sur place')}
                 className={`flex-1 flex items-center justify-center gap-3 py-4 text-[10px] font-sans font-bold uppercase tracking-[0.2em] transition-all duration-500 ${
-                  deliveryMode === 'sur place' ? 'bg-white text-accent-red border border-border-color shadow-sm' : 'text-secondary-text'
+                  orderType === 'sur place' ? 'bg-white text-accent-red border border-border-color shadow-sm' : 'text-secondary-text'
                 }`}
               >
                 <Store className="w-4 h-4" />
@@ -380,58 +317,40 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
               </button>
             </div>
 
-            <div className="space-y-10">
+            <form onSubmit={handleSubmit} className="space-y-10">
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Votre Prénom *</label>
-                  {/* Correction 3: Champ Prenom optimisé mobile */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Votre Nom</label>
                   <input
                     type="text"
-                    placeholder="Votre prénom *"
-                    value={formData.firstName}
-                    onChange={e => setFormData({
-                      ...formData, firstName: e.target.value
-                    })}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: 16,
-                      borderRadius: 10,
-                      border: '1px solid #ddd',
-                      boxSizing: 'border-box',
-                      WebkitAppearance: 'none',
-                    }}
+                    required
+                    placeholder="Votre nom complet"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="elegant-input w-full px-6 py-5 text-xs"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Téléphone *</label>
-                  {/* Correction 3: Champ Téléphone optimisé mobile */}
-                  <input
-                    type="tel"
-                    placeholder="Téléphone *"
-                    value={formData.phone}
-                    onChange={e => setFormData({
-                      ...formData, phone: e.target.value
-                    })}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: 16,
-                      borderRadius: 10,
-                      border: '1px solid #ddd',
-                      boxSizing: 'border-box',
-                      WebkitAppearance: 'none',
-                    }}
-                  />
-                </div>
+                {orderType !== 'livraison' && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Téléphone</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="06 XX XX XX XX"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="elegant-input w-full px-6 py-5 text-xs"
+                    />
+                  </div>
+                )}
               </div>
 
-              {deliveryMode === 'livraison' && (
+              {orderType === 'livraison' && (
                 <div className="space-y-10">
                   <div className="space-y-4">
                     <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Localisation de livraison</label>
-                    <div className="h-[250px] w-full border border-border-color relative z-0">
+                    <div className="h-[350px] w-full border border-border-color relative">
                       <MapContainer center={AGADIR_CENTER} zoom={15} scrollWheelZoom={false} className="h-full w-full">
                         <TileLayer
                           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -449,53 +368,52 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
                         </Marker>
                         <LocationMarker onLocationSelect={handleLocationSelect} position={mapPosition} />
                       </MapContainer>
-                      <div className="absolute bottom-2 left-2 right-2 z-[1000] bg-white/90 backdrop-blur p-2 border border-border-color text-[8px] font-sans font-bold text-main-text uppercase tracking-[0.1em] text-center">
+                      <div className="absolute bottom-6 left-6 right-6 z-[1000] bg-white/90 backdrop-blur p-4 border border-border-color text-[9px] font-sans font-bold text-main-text uppercase tracking-[0.2em] text-center">
                         Cliquez sur la carte pour définir votre adresse
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Adresse précise</label>
-                    <textarea
-                      placeholder="Ex: Quartier Talborjt, Rue X, Imm Y..."
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        fontSize: 16,
-                        borderRadius: 10,
-                        border: '1px solid #ddd',
-                        boxSizing: 'border-box',
-                        minHeight: 100,
-                        WebkitAppearance: 'none',
-                      }}
-                    />
-                    {geocoding && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Loader2 className="w-3 h-3 text-[#8B1A1A] animate-spin" />
-                        <span className="text-[10px] text-gray-400">Recherche d'adresse...</span>
-                      </div>
-                    )}
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Adresse à Agadir</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-5 top-5 w-4 h-4 text-secondary-text/40" />
+                      <textarea
+                        required
+                        placeholder="Ex: Quartier Talborjt, Rue X, Imm Y..."
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="elegant-input w-full pl-14 pr-6 py-5 h-32 resize-none text-xs"
+                      />
+                      {geocoding && (
+                        <div className="absolute right-5 top-5">
+                          <Loader2 className="w-4 h-4 text-accent-red animate-spin" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Téléphone</label>
+                    <div className="relative">
+                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-text/40" />
+                      <input
+                        type="tel"
+                        required
+                        placeholder="06 XX XX XX XX"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="elegant-input w-full pl-14 pr-6 py-5 text-xs"
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     <label className="text-[10px] font-sans font-bold text-secondary-text uppercase tracking-[0.2em]">Notes spéciales</label>
                     <textarea
                       placeholder="Instructions pour la cuisine ou le livreur..."
-                      value={formData.notes}
-                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        fontSize: 16,
-                        borderRadius: 10,
-                        border: '1px solid #ddd',
-                        boxSizing: 'border-box',
-                        minHeight: 80,
-                        WebkitAppearance: 'none',
-                      }}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="elegant-input w-full px-6 py-5 h-24 resize-none text-xs"
                     />
                   </div>
                 </div>
@@ -506,9 +424,9 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
                 <div className="grid grid-cols-2 gap-6">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('especes')}
+                    onClick={() => setPaymentMethod('cash')}
                     className={`flex flex-col items-center justify-center p-6 border transition-all duration-500 gap-4 ${
-                      paymentMethod === 'especes' ? 'border-accent-red bg-bg-off-white text-accent-red' : 'border-border-color bg-white text-secondary-text/40'
+                      paymentMethod === 'cash' ? 'border-accent-red bg-bg-off-white text-accent-red' : 'border-border-color bg-white text-secondary-text/40'
                     }`}
                   >
                     <ShoppingBag className="w-6 h-6" />
@@ -517,16 +435,18 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
                   <button
                     type="button"
                     disabled
-                    className="flex flex-col items-center justify-center p-6 border border-border-color bg-bg-off-white text-secondary-text/20 cursor-not-allowed gap-4 opacity-50"
+                    className="flex flex-col items-center justify-center p-6 border border-border-color bg-bg-off-white text-secondary-text/20 cursor-not-allowed gap-4"
                   >
                     <div className="flex items-center gap-3">
                       <CreditCard className="w-5 h-5 opacity-40" />
                       <Lock className="w-3 h-3 opacity-40" />
                     </div>
-                    <span className="text-[9px] font-sans font-bold uppercase tracking-tight text-center">CB (Bientôt)</span>
+                    <span className="text-[9px] font-sans font-bold uppercase tracking-tight text-center">Carte Bancaire</span>
                   </button>
                 </div>
-                <p className="text-[10px] text-secondary-text font-serif italic text-center">Paiement à la réception de votre commande</p>
+                {paymentMethod === 'cash' && (
+                  <p className="text-[10px] text-secondary-text font-serif italic text-center">Paiement à la réception de votre commande</p>
+                )}
               </div>
 
               <div className="pt-10 border-t border-border-color space-y-6">
@@ -540,37 +460,21 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
                 </div>
               </div>
 
-              {/* Correction 1: Bouton Commander optimisé */}
               <button
-                onClick={handleSubmitOrder}
-                disabled={isSubmitting || cartItems.length === 0}
-                style={{
-                  width: '100%',
-                  padding: '18px',
-                  backgroundColor: isSubmitting ? '#666' : '#8B1A1A',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 12,
-                  fontSize: 16,
-                  fontWeight: 'bold',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  letterSpacing: '0.1em',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                  minHeight: 56,
-                  transition: 'background-color 0.3s ease',
-                }}
+                type="submit"
+                disabled={submitting}
+                className="elegant-button w-full py-5"
               >
-                {isSubmitting ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Commande en cours...</span>
-                  </div>
+                {submitting ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
                 ) : (
-                  'CONFIRMER LA COMMANDE'
+                  <span className="flex items-center justify-center gap-4">
+                    <ShoppingBag className="w-5 h-5" />
+                    Confirmer la commande
+                  </span>
                 )}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
