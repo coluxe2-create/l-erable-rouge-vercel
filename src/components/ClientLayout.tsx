@@ -221,12 +221,26 @@ export default function ClientLayout({ children, activePage, setActivePage, user
               >
                 <Instagram size={22} color="white" />
               </a>
-              <div className="w-10 h-10 border border-border-color flex items-center justify-center hover:border-accent-red transition-colors cursor-pointer">
-                <span className="text-[10px] uppercase tracking-widest font-sans">FB</span>
-              </div>
-              <div className="w-10 h-10 border border-border-color flex items-center justify-center hover:border-accent-red transition-colors cursor-pointer">
-                <span className="text-[10px] uppercase tracking-widest font-sans">TW</span>
-              </div>
+              <a 
+                href="https://www.tiktok.com/@lerablerouge?_r=1&_t=ZS-95q922TqYld"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: '#000000',
+                  color: 'white',
+                  textDecoration: 'none'
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.04-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.8.2-1.2.64-1.96 1.92-2.12 3.28-.01.4-.01.8.01 1.2.12 1.16.82 2.22 1.8 2.82.91.56 2.05.73 3.09.43 1.13-.3 2.11-1.16 2.54-2.22.18-.45.24-.93.26-1.41-.01-4.83.01-9.66-.02-14.49z"/>
+                </svg>
+              </a>
             </div>
           </div>
           <div>
@@ -258,7 +272,7 @@ export default function ClientLayout({ children, activePage, setActivePage, user
             <ul className="space-y-5 text-sm font-serif italic">
               <li className="flex justify-between">
                 <span>Lundi - Dimanche</span>
-                <span className="text-accent-red">12:00 - 00:00</span>
+                <span className="text-accent-red">08:00 - 00:00</span>
               </li>
               <li className="text-[11px] text-secondary-text/60">
                 Service continu & Livraison disponible

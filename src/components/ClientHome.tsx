@@ -104,7 +104,7 @@ export default function ClientHome({ onNavigate, categories }: ClientHomeProps) 
               </div>
               <div>
                 <h4 className="text-[10px] uppercase tracking-[0.2em] font-sans font-bold text-main-text mb-2">Horaires</h4>
-                <p className="text-secondary-text font-serif italic text-sm">Ouvert 7j/7 • 12:00 - 00:00</p>
+                <p className="text-secondary-text font-serif italic text-sm">Ouvert 7j/7 • 08:00 - 00:00</p>
               </div>
             </div>
             
@@ -249,12 +249,13 @@ export default function ClientHome({ onNavigate, categories }: ClientHomeProps) 
             Parcourez nos différentes catégories et laissez-vous tenter par nos créations culinaires exclusives.
           </motion.p>
         </div>
-        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-5 gap-6 md:gap-10">
           {[
-            { name: 'Antipasti', img: 'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?auto=format&fit=crop&q=80&w=500', icon: '🥗' },
-            { name: 'Pizzas Feu de Bois', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=500', icon: '🍕' },
-            { name: 'Burgers', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=500', icon: '🍔' },
-            { name: 'Pasta au Choix', img: 'https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&q=80&w=500', icon: '🍝' },
+            { name: 'Antipasti', img: 'https://res.cloudinary.com/dmgsz5ihe/image/upload/v1777141175/WhatsApp_Image_2026-04-25_at_17.18.10_usbumh.jpg', icon: '🥗' },
+            { name: 'Pizzas Feu de Bois', img: 'https://res.cloudinary.com/dmgsz5ihe/image/upload/v1777141175/WhatsApp_Image_2026-04-25_at_17.16.53_q3wz0q.jpg', icon: '🍕' },
+            { name: 'Burgers', img: 'https://res.cloudinary.com/dmgsz5ihe/image/upload/v1777141176/WhatsApp_Image_2026-04-25_at_17.16.19_yjgzvl.jpg', icon: '🍔' },
+            { name: 'Brunchs', img: 'https://res.cloudinary.com/dmgsz5ihe/image/upload/v1777141176/WhatsApp_Image_2026-04-25_at_17.16.02_wp5s6z.jpg', icon: '🥞' },
+            { name: 'Desserts', img: 'https://res.cloudinary.com/dmgsz5ihe/image/upload/v1777141175/WhatsApp_Image_2026-04-25_at_17.17.18_pphzsb.jpg', icon: '🍰' },
           ].map((cat, i) => (
             <motion.div
               key={i}
