@@ -16,7 +16,7 @@ export const getSlides = async (req: Request, res: Response) => {
 };
 
 export const createSlide = async (req: Request, res: Response) => {
-  const { titre, description, order_index, actif } = req.body;
+  const { titre, description, order_index, is_active } = req.body;
   const photo_url = req.file ? (req.file as any).path : null;
 
   if (!photo_url) {
@@ -25,8 +25,8 @@ export const createSlide = async (req: Request, res: Response) => {
 
   try {
     const result = await pool.query(
-      'INSERT INTO slides (photo_url, titre, description, order_index, actif) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [photo_url, titre, description, order_index || 0, actif !== undefined ? actif : true]
+      'INSERT INTO slides (photo_url, titre, description, order_index, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [photo_url, titre, description, order_index || 0, is_active !== undefined ? is_active : true]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -36,12 +36,12 @@ export const createSlide = async (req: Request, res: Response) => {
 
 export const updateSlide = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { titre, description, order_index, actif } = req.body;
+  const { titre, description, order_index, is_active } = req.body;
   const photo_url = req.file ? (req.file as any).path : undefined;
 
   try {
-    let query = 'UPDATE slides SET titre = $1, description = $2, order_index = $3, actif = $4';
-    let params = [titre, description, order_index, actif];
+    let query = 'UPDATE slides SET titre = $1, description = $2, order_index = $3, is_active = $4';
+    let params = [titre, description, order_index, is_active];
     
     if (photo_url) {
       query += ', photo_url = $5 WHERE id = $6 RETURNING *';

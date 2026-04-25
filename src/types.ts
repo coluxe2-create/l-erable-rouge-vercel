@@ -90,6 +90,6 @@ export interface Slide {
   titre?: string;
   description?: string;
   order_index: number;
-  actif: boolean;
+  is_active: boolean;
   created_at: string;
 }

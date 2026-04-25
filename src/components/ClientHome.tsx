@@ -35,7 +35,7 @@ export default function ClientHome({ onNavigate, categories }: ClientHomeProps) 
   }, []);
 
   return (
-    <div className="space-y-32 pb-32">
+    <div className="pb-32">
       {/* Hero Section */}
       <section className="relative h-[90vh] flex items-center justify-center overflow-hidden bg-white">
         <div className="absolute inset-0">
@@ -80,14 +80,15 @@ export default function ClientHome({ onNavigate, categories }: ClientHomeProps) 
         </div>
       </section>
 
-      {/* Carousel Section */}
+      {/* Carousel Section - Directly below hero */}
       {slides.length > 0 && (
-        <section className="max-w-[1600px] mx-auto px-6">
+        <section className="w-full">
           <Carousel slides={slides} />
         </section>
       )}
 
       {/* Quick Info & Actions Section */}
+      <div className="space-y-32 mt-32">
       <motion.section 
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -411,5 +412,6 @@ export default function ClientHome({ onNavigate, categories }: ClientHomeProps) 
         </div>
       </motion.section>
     </div>
-  );
+  </div>
+);
 }

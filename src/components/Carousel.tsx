@@ -11,7 +11,7 @@ const Carousel: React.FC<CarouselProps> = ({ slides }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
-  const activeSlides = Array.isArray(slides) ? slides.filter(s => s.actif) : [];
+  const activeSlides = Array.isArray(slides) ? slides.filter(s => s.is_active) : [];
 
   const nextSlide = useCallback(() => {
     if (activeSlides.length === 0) return;
@@ -52,7 +52,7 @@ const Carousel: React.FC<CarouselProps> = ({ slides }) => {
   };
 
   return (
-    <div className="relative w-full h-[220px] md:h-[500px] overflow-hidden bg-deep-black">
+    <div className="relative w-full h-[300px] md:h-[600px] overflow-hidden bg-deep-black">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={currentIndex}

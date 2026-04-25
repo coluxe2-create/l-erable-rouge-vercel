@@ -44,7 +44,7 @@ export function formatOrderMessage(
   items: any[]
 ): string {
   const itemsList = items.map(item => 
-    `  • ${item.name || 'Produit'} x${item.quantity} — ${Math.round(item.unit_price * item.quantity)} MAD`
+    `  • ${item.name || 'Produit'} x${item.quantity} — ${Math.round(Number(item.unit_price) * Number(item.quantity))} MAD`
   ).join('\n');
 
   return `

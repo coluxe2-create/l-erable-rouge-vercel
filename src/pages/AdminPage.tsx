@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { api } from '../services/api';
-import { MenuItem, Category, Order, Reservation } from '../types';
+import { MenuItem, Category, Order, Reservation, Slide } from '../types';
 import { sendTelegramNotification } from '../services/telegram';
 
 // --- ADMIN LOGIN COMPONENT ---
@@ -160,6 +160,24 @@ export default function AdminPage() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAuthReady, setIsAuthReady] = useState(false);
+  
+  // Custom Modals & Notifications
+  const [confirmModal, setConfirmModal] = useState<{ 
+    isOpen: boolean; 
+    title: string; 
+    message: string; 
+    onConfirm: () => void 
+  } | null>(null);
+  
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'error'
+  } | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -215,7 +233,6 @@ export default function AdminPage() {
             { id: 'reservations', label: 'Réservations', icon: <Calendar className="w-5 h-5" /> },
             { id: 'clients', label: 'Clients', icon: <Users className="w-5 h-5" /> },
             { id: 'ads', label: 'Publicités', icon: <Megaphone className="w-5 h-5" /> },
-            { id: 'settings', label: 'Paramètres', icon: <Settings className="w-5 h-5" /> },
           ].map((item) => (
             <button
               key={item.id}
@@ -256,122 +273,82 @@ export default function AdminPage() {
       <main className="flex-1 ml-72 p-10">
         <div className="max-w-6xl mx-auto">
           {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
-          {activeTab === 'orders' && <OrdersView />}
-          {activeTab === 'menu' && <MenuView />}
-          {activeTab === 'reservations' && <ReservationsView />}
-          {activeTab === 'clients' && <ClientsView />}
-          {activeTab === 'ads' && <AdsView />}
-          {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'orders' && <OrdersView showNotification={showNotification} confirmAction={(title, msg, action) => setConfirmModal({ isOpen: true, title, message: msg, onConfirm: action })} />}
+          {activeTab === 'menu' && <MenuView showNotification={showNotification} confirmAction={(title, msg, action) => setConfirmModal({ isOpen: true, title, message: msg, onConfirm: action })} />}
+          {activeTab === 'reservations' && <ReservationsView showNotification={showNotification} />}
+          {activeTab === 'clients' && <ClientsView showNotification={showNotification} confirmAction={(title, msg, action) => setConfirmModal({ isOpen: true, title, message: msg, onConfirm: action })} />}
+          {activeTab === 'ads' && <AdsView showNotification={showNotification} confirmAction={(title, msg, action) => setConfirmModal({ isOpen: true, title, message: msg, onConfirm: action })} />}
         </div>
       </main>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {confirmModal?.isOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setConfirmModal(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="relative w-full max-w-md bg-[#251515] border border-white/10 rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-[#8B1A1A]/20 rounded-2xl flex items-center justify-center text-[#8B1A1A]">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">{confirmModal.title}</h3>
+                  <p className="text-white/40 text-sm mt-1">{confirmModal.message}</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setConfirmModal(null)}
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl transition-all"
+                >
+                  Annuler
+                </button>
+                <button 
+                  onClick={() => {
+                    confirmModal.onConfirm();
+                    setConfirmModal(null);
+                  }}
+                  className="flex-1 bg-[#8B1A1A] hover:bg-[#6B1414] text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-[#8B1A1A]/20"
+                >
+                  Confirmer
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Notification Toast */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 50 }} 
+            className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[210] px-8 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 min-w-[300px] backdrop-blur-xl ${
+              notification.type === 'success' 
+                ? 'bg-emerald-600/90 border-emerald-500/50 text-white' 
+                : 'bg-red-600/90 border-red-500/50 text-white'
+            }`}
+          >
+            {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            <span className="font-bold text-sm tracking-wide">{notification.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // --- SUB-VIEWS ---
 
-function SettingsView() {
-  const [settings, setSettings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    const { data } = await supabase.from('settings').select('*');
-    if (data) setSettings(data);
-    setLoading(false);
-  };
-
-  const handleUpdate = async (key: string, value: string) => {
-    setSaving(true);
-    const { error } = await supabase.from('settings').upsert({ key, value });
-    if (error) {
-      // Si la table n'existe pas, on simule pour la démo
-      console.error('Erreur settings:', error);
-    }
-    await fetchSettings();
-    setSaving(false);
-  };
-
-  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#8B1A1A]" /></div>;
-
-  const getSetting = (key: string) => settings.find(s => s.key === key)?.value || '';
-
-  return (
-    <div className="space-y-10">
-      <h2 className="text-3xl font-display italic">Paramètres du Restaurant</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-[#251515] border border-white/5 p-8 rounded-3xl shadow-xl space-y-6">
-          <h3 className="text-xl font-bold flex items-center gap-3">
-            <Clock className="w-5 h-5 text-[#8B1A1A]" /> Horaires d'ouverture
-          </h3>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Semaine (Lun-Ven)</label>
-              <input 
-                type="text" 
-                defaultValue={getSetting('hours_weekday')} 
-                onBlur={(e) => handleUpdate('hours_weekday', e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#8B1A1A]" 
-                placeholder="ex: 12:00 - 23:00"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Weekend (Sam-Dim)</label>
-              <input 
-                type="text" 
-                defaultValue={getSetting('hours_weekend')} 
-                onBlur={(e) => handleUpdate('hours_weekend', e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#8B1A1A]" 
-                placeholder="ex: 12:00 - 00:00"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-[#251515] border border-white/5 p-8 rounded-3xl shadow-xl space-y-6">
-          <h3 className="text-xl font-bold flex items-center gap-3">
-            <Phone className="w-5 h-5 text-[#8B1A1A]" /> Contact & Localisation
-          </h3>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Téléphone</label>
-              <input 
-                type="text" 
-                defaultValue={getSetting('contact_phone')} 
-                onBlur={(e) => handleUpdate('contact_phone', e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#8B1A1A]" 
-                placeholder="+212 6XX XX XX XX"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Adresse</label>
-              <input 
-                type="text" 
-                defaultValue={getSetting('contact_address')} 
-                onBlur={(e) => handleUpdate('contact_address', e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#8B1A1A]" 
-                placeholder="Hay Mohammadi, Agadir"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {saving && (
-        <div className="fixed bottom-10 right-10 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 animate-bounce">
-          <Check className="w-4 h-4" /> Enregistrement...
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ClientsView() {
+function ClientsView({ showNotification, confirmAction }: { showNotification: (msg: string, type?: 'success' | 'error') => void, confirmAction: (title: string, msg: string, action: () => void) => void }) {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -387,10 +364,19 @@ function ClientsView() {
 
   const toggleRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'client' : 'admin';
-    if (window.confirm(`Changer le rôle de cet utilisateur en ${newRole} ?`)) {
-      await supabase.from('users').update({ role: newRole }).eq('id', userId);
-      fetchClients();
-    }
+    confirmAction(
+      'Changer le rôle ?',
+      `Voulez-vous vraiment changer le rôle de cet utilisateur en ${newRole} ?`,
+      async () => {
+        const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
+        if (error) {
+          showNotification('Erreur lors du changement de rôle', 'error');
+        } else {
+          showNotification(`Utilisateur passé en ${newRole}`);
+          fetchClients();
+        }
+      }
+    );
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#8B1A1A]" /></div>;
@@ -446,7 +432,7 @@ function ClientsView() {
   );
 }
 
-function AdsView() {
+function AdsView({ showNotification, confirmAction }: { showNotification: (msg: string, type?: 'success' | 'error') => void, confirmAction: (title: string, msg: string, action: () => void) => void }) {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -499,7 +485,7 @@ function AdsView() {
         description: slide.description || '',
         photo_url: slide.photo_url,
         order_index: slide.order_index,
-        actif: slide.actif
+        is_active: slide.is_active
       });
     } else {
       setEditingSlide(null);
@@ -508,7 +494,7 @@ function AdsView() {
         description: '',
         photo_url: '',
         order_index: slides.length,
-        actif: true
+        is_active: true
       });
     }
     setIsModalOpen(true);
@@ -521,29 +507,53 @@ function AdsView() {
       description: formData.description,
       photo_url: formData.photo_url,
       order_index: formData.order_index,
-      actif: formData.actif
+      is_active: formData.is_active
     };
 
-    if (editingSlide) {
-      await supabase.from('slides').update(slideData).eq('id', editingSlide.id);
-    } else {
-      await supabase.from('slides').insert([slideData]);
+    try {
+      let error;
+      if (editingSlide) {
+        const { error: updateError } = await supabase.from('slides').update(slideData).eq('id', editingSlide.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase.from('slides').insert([slideData]);
+        error = insertError;
+      }
+      
+      if (error) {
+        console.error('Erreur Supabase slides:', error);
+        showNotification('Erreur lors de l\'enregistrement : ' + error.message, 'error');
+        return;
+      }
+
+      showNotification(editingSlide ? 'Publicité modifiée' : 'Publicité ajoutée');
+      fetchSlides();
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error('Erreur inattendue slides:', err);
+      showNotification('Erreur inattendue', 'error');
     }
-    
-    fetchSlides();
-    setIsModalOpen(false);
   };
 
   const toggleStatus = async (slide: Slide) => {
-    await supabase.from('slides').update({ actif: !slide.actif }).eq('id', slide.id);
+    await supabase.from('slides').update({ is_active: !slide.is_active }).eq('id', slide.id);
     fetchSlides();
   };
 
   const deleteSlide = async (id: number) => {
-    if (window.confirm('Supprimer cette publicité ?')) {
-      await supabase.from('slides').delete().eq('id', id);
-      fetchSlides();
-    }
+    confirmAction(
+      'Supprimer la publicité ?',
+      'Cette action est irréversible.',
+      async () => {
+        const { error } = await supabase.from('slides').delete().eq('id', id);
+        if (error) {
+          showNotification('Erreur lors de la suppression', 'error');
+        } else {
+          showNotification('Publicité supprimée');
+          fetchSlides();
+        }
+      }
+    );
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#8B1A1A]" /></div>;
@@ -576,10 +586,10 @@ function AdsView() {
                 <button 
                   onClick={() => toggleStatus(slide)}
                   className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full transition-all ${
-                    slide.actif ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                    slide.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
                   }`}
                 >
-                  {slide.actif ? 'Actif' : 'Inactif'}
+                  {slide.is_active ? 'Actif' : 'Inactif'}
                 </button>
                 <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Ordre: {slide.order_index}</span>
               </div>
@@ -609,7 +619,7 @@ function AdsView() {
                       try {
                         const url = await uploadImage(file);
                         setFormData({ ...formData, photo_url: url });
-                      } catch (err) { alert('Erreur upload'); }
+                      } catch (err) { showNotification('Erreur d\'upload', 'error'); }
                       setUploading(false);
                     }} />
                   </label>
@@ -623,16 +633,16 @@ function AdsView() {
                   <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Description</label>
                   <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-6 text-white focus:outline-none focus:border-[#8B1A1A] resize-none" />
                 </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Ordre d'affichage</label>
-                    <input type="number" required value={formData.order_index} onChange={e => setFormData({...formData, order_index: parseInt(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-6 text-white focus:outline-none focus:border-[#8B1A1A]" />
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest font-bold text-white/40">Ordre d'affichage</label>
+                      <input type="number" required value={formData.order_index} onChange={e => setFormData({...formData, order_index: parseInt(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-6 text-white focus:outline-none focus:border-[#8B1A1A]" />
+                    </div>
+                    <div className="flex items-center gap-4 pt-8">
+                      <input type="checkbox" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="w-5 h-5 rounded bg-black/40 border-white/10 text-[#8B1A1A] focus:ring-[#8B1A1A]" />
+                      <label className="text-sm text-white/60">Afficher sur le site</label>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 pt-8">
-                    <input type="checkbox" checked={formData.actif} onChange={e => setFormData({...formData, actif: e.target.checked})} className="w-5 h-5 rounded bg-black/40 border-white/10 text-[#8B1A1A] focus:ring-[#8B1A1A]" />
-                    <label className="text-sm text-white/60">Afficher sur le site</label>
-                  </div>
-                </div>
                 <button type="submit" disabled={uploading} className="w-full bg-[#8B1A1A] hover:bg-[#6B1414] text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-[#8B1A1A]/20">Enregistrer</button>
               </form>
             </motion.div>
@@ -731,7 +741,7 @@ function DashboardView({ setActiveTab }: { setActiveTab: (tab: string) => void }
   );
 }
 
-function OrdersView() {
+function OrdersView({ showNotification, confirmAction }: { showNotification: (msg: string, type?: 'success' | 'error') => void, confirmAction: (title: string, msg: string, action: () => void) => void }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -775,6 +785,40 @@ function OrdersView() {
     }
   };
 
+  const deleteOrder = async (id: string) => {
+    confirmAction(
+      'Supprimer la commande ?',
+      'Cette action supprimera définitivement la commande et ses articles.',
+      async () => {
+        try {
+          // 1. Supprimer les order_items liés
+          await supabase
+            .from('order_items')
+            .delete()
+            .eq('order_id', id)
+
+          // 2. Supprimer la commande
+          const { error } = await supabase
+            .from('orders')
+            .delete()
+            .eq('id', id)
+
+          if (error) {
+            showNotification('Erreur: ' + error.message, 'error');
+            return
+          }
+
+          // 3. Mettre à jour la liste
+          setOrders(prev => prev.filter(o => o.id !== id))
+          showNotification('Commande supprimée');
+          
+        } catch (err) {
+          showNotification('Erreur inattendue', 'error');
+        }
+      }
+    );
+  }
+
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#8B1A1A]" /></div>;
 
   return (
@@ -813,7 +857,7 @@ function OrdersView() {
                     {order.order_items?.map((item: any) => (
                       <div key={item.id} className="text-xs text-white/60 flex justify-between">
                         <span>{item.products?.name} x{item.quantity}</span>
-                        <span>{Number(item.subtotal).toFixed(0)} MAD</span>
+                        <span>{Math.round(Number(item.unit_price) * Number(item.quantity))} MAD</span>
                       </div>
                     ))}
                   </div>
@@ -827,18 +871,19 @@ function OrdersView() {
                 <div className="text-[10px] text-white/20 uppercase tracking-widest font-bold">{new Date(order.created_at).toLocaleString('fr-FR')}</div>
               </div>
               <div className="flex gap-2">
-                {order.status === 'en_attente' && (
-                  <button onClick={() => updateStatus(order.id, 'en_preparation')} className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20"><ChefHat className="w-5 h-5" /></button>
-                )}
-                {order.status === 'en_preparation' && (
-                  <button onClick={() => updateStatus(order.id, 'en_route')} className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-lg shadow-blue-600/20"><Truck className="w-5 h-5" /></button>
-                )}
-                {order.status === 'en_route' && (
-                  <button onClick={() => updateStatus(order.id, 'livre')} className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20"><CheckCircle2 className="w-5 h-5" /></button>
-                )}
-                {order.status !== 'annule' && order.status !== 'livre' && (
-                  <button onClick={() => updateStatus(order.id, 'annule')} className="p-3 bg-[#8B1A1A] hover:bg-[#6B1414] text-white rounded-xl transition-all shadow-lg shadow-[#8B1A1A]/20"><XCircle className="w-5 h-5" /></button>
-                )}
+                <button onClick={() => updateStatus(order.id, 'en_attente')} className={`p-3 rounded-xl transition-all ${order.status === 'en_attente' ? 'bg-[#8B1A1A] text-white shadow-lg' : 'bg-black/20 text-white/40 hover:bg-white/5'}`} title="En attente"><Clock className="w-5 h-5" /></button>
+                <button onClick={() => updateStatus(order.id, 'en_preparation')} className={`p-3 rounded-xl transition-all ${order.status === 'en_preparation' ? 'bg-amber-600 text-white shadow-lg' : 'bg-black/20 text-white/40 hover:bg-white/5'}`} title="En préparation"><ChefHat className="w-5 h-5" /></button>
+                <button onClick={() => updateStatus(order.id, 'en_route')} className={`p-3 rounded-xl transition-all ${order.status === 'en_route' ? 'bg-blue-600 text-white shadow-lg' : 'bg-black/20 text-white/40 hover:bg-white/5'}`} title="En livraison"><Truck className="w-5 h-5" /></button>
+                <button onClick={() => updateStatus(order.id, 'livre')} className={`p-3 rounded-xl transition-all ${order.status === 'livre' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-black/20 text-white/40 hover:bg-white/5'}`} title="Livré"><CheckCircle2 className="w-5 h-5" /></button>
+                <button onClick={() => updateStatus(order.id, 'annule')} className={`p-3 rounded-xl transition-all ${order.status === 'annule' ? 'bg-red-600 text-white shadow-lg' : 'bg-black/20 text-white/40 hover:bg-white/5'}`} title="Annulé"><XCircle className="w-5 h-5" /></button>
+                
+                <button
+                  onClick={() => deleteOrder(order.id)}
+                  title="Supprimer la commande"
+                  className="p-3 bg-white/5 hover:bg-[#8B1A1A] text-white/40 hover:text-white rounded-xl transition-all border border-white/5 hover:border-[#8B1A1A]"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>
@@ -848,7 +893,7 @@ function OrdersView() {
   );
 }
 
-function MenuView() {
+function MenuView({ showNotification, confirmAction }: { showNotification: (msg: string, type?: 'success' | 'error') => void, confirmAction: (title: string, msg: string, action: () => void) => void }) {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -949,40 +994,41 @@ function MenuView() {
   };
 
   const deleteItem = async (id: string) => {
-    const confirmed = window.confirm(
-      'Êtes-vous sûr de vouloir supprimer ce plat ?'
-    )
-    if (!confirmed) return
+    confirmAction(
+      'Supprimer ce plat ?',
+      'Voulez-vous vraiment supprimer ce plat du menu ?',
+      async () => {
+        try {
+          // 1. D'abord supprimer les order_items liés pour éviter les erreurs de contrainte
+          await supabase
+            .from('order_items')
+            .delete()
+            .eq('product_id', id)
 
-    try {
-      // 1. D'abord supprimer les order_items liés pour éviter les erreurs de contrainte
-      await supabase
-        .from('order_items')
-        .delete()
-        .eq('product_id', id)
+          // 2. Ensuite supprimer le produit
+          const { error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', id)
 
-      // 2. Ensuite supprimer le produit
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id)
+          if (error) {
+            console.error('Erreur suppression:', error)
+            showNotification('Erreur : ' + error.message, 'error')
+            return
+          }
 
-      if (error) {
-        console.error('Erreur suppression:', error)
-        alert('Erreur : ' + error.message)
-        return
+          // 3. Mettre à jour la liste localement
+          setItems(prev => prev.filter(item => item.id !== id))
+          
+          // 4. Confirmation visuelle
+          showNotification('Plat supprimé avec succès');
+          
+        } catch (err) {
+          console.error('Erreur inattendue:', err)
+          showNotification('Erreur inattendue lors de la suppression', 'error')
+        }
       }
-
-      // 3. Mettre à jour la liste localement
-      setItems(prev => prev.filter(item => item.id !== id))
-      
-      // 4. Confirmation visuelle
-      alert('Plat supprimé avec succès ✓')
-      
-    } catch (err) {
-      console.error('Erreur inattendue:', err)
-      alert('Erreur inattendue lors de la suppression')
-    }
+    );
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#8B1A1A]" /></div>;
@@ -1086,7 +1132,7 @@ function MenuView() {
                           const url = await uploadImage(file);
                           setFormData({ ...formData, image_url: url });
                         } catch (err) {
-                          alert('Erreur upload image');
+                          showNotification('Erreur upload image', 'error');
                         }
                         setUploading(false);
                       }}
@@ -1131,7 +1177,7 @@ function MenuView() {
   );
 }
 
-function ReservationsView() {
+function ReservationsView({ showNotification }: { showNotification: (msg: string, type?: 'success' | 'error') => void }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
 

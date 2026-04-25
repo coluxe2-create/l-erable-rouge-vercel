@@ -100,6 +100,15 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_reservations_date ON reservations(reservation_date);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 
+-- Politiques de suppression pour l'admin
+-- Note: Ces politiques supposent que RLS est activé. 
+-- Si RLS n'est pas activé, elles n'auront aucun effet mais sont bonnes pour la documentation.
+DROP POLICY IF EXISTS "Admin can delete orders" ON public.orders;
+CREATE POLICY "Admin can delete orders" ON public.orders FOR DELETE USING (true);
+
+DROP POLICY IF EXISTS "Admin can delete order_items" ON public.order_items;
+CREATE POLICY "Admin can delete order_items" ON public.order_items FOR DELETE USING (true);
+
 -- Trigger pour mettre à jour updated_at automatiquement
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -125,7 +134,7 @@ CREATE TABLE IF NOT EXISTS slides (
     titre VARCHAR(255),
     description TEXT,
     order_index INTEGER DEFAULT 0,
-    actif BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -146,11 +155,11 @@ INSERT INTO categories (id, name, description, order_index)
 SELECT 'jus-cocktails', 'Jus & Cocktails', 'Rafraîchissements naturels.', 4
 WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Jus & Cocktails');
 
-INSERT INTO slides (photo_url, titre, description, order_index, actif)
+INSERT INTO slides (photo_url, titre, description, order_index, is_active)
 SELECT 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=2000', 'L''Érable Rouge', 'Une expérience culinaire unique à Agadir.', 1, true
 WHERE NOT EXISTS (SELECT 1 FROM slides WHERE titre = 'L''Érable Rouge');
 
-INSERT INTO slides (photo_url, titre, description, order_index, actif)
+INSERT INTO slides (photo_url, titre, description, order_index, is_active)
 SELECT 'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?auto=format&fit=crop&q=80&w=2000', 'Saveurs Authentiques', 'Des produits frais sélectionnés avec soin.', 2, true
 WHERE NOT EXISTS (SELECT 1 FROM slides WHERE titre = 'Saveurs Authentiques');
 

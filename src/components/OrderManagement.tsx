@@ -208,9 +208,9 @@ export default function OrderManagement() {
                           <div key={item.id} className="flex items-center justify-between text-white border-b border-border-dark pb-2">
                             <div className="flex flex-col">
                               <span className="font-bold">{item.products?.name}</span>
-                              <span className="text-gray-text text-xs">{item.quantity} x {Number(item.unit_price).toFixed(0)} MAD</span>
+                              <span className="text-gray-text text-xs">{item.quantity} x {Math.round(Number(item.unit_price))} MAD</span>
                             </div>
-                            <span className="font-bold">{Number(item.subtotal).toFixed(0)} MAD</span>
+                            <span className="font-bold">{Math.round(Number(item.unit_price) * Number(item.quantity))} MAD</span>
                           </div>
                         ))}
                         <div className="space-y-1 pt-2 border-t border-border-dark">

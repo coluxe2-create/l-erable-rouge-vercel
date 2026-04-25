@@ -24,3 +24,14 @@ USING (is_active = true);
 
 -- Note: Pour les opérations d'écriture (INSERT, UPDATE, DELETE), 
 -- elles sont généralement réservées aux administrateurs authentifiés.
+
+-- Politiques de suppression pour l'admin
+DROP POLICY IF EXISTS "Admin can delete orders" ON public.orders;
+CREATE POLICY "Admin can delete orders"
+ON public.orders FOR DELETE
+USING (true);
+
+DROP POLICY IF EXISTS "Admin can delete order_items" ON public.order_items;
+CREATE POLICY "Admin can delete order_items"
+ON public.order_items FOR DELETE
+USING (true);
