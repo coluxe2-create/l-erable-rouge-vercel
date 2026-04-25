@@ -103,11 +103,27 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 -- Politiques de suppression pour l'admin
 -- Note: Ces politiques supposent que RLS est activé. 
 -- Si RLS n'est pas activé, elles n'auront aucun effet mais sont bonnes pour la documentation.
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS "Admin can delete orders" ON public.orders;
 CREATE POLICY "Admin can delete orders" ON public.orders FOR DELETE USING (true);
 
 DROP POLICY IF EXISTS "Admin can delete order_items" ON public.order_items;
 CREATE POLICY "Admin can delete order_items" ON public.order_items FOR DELETE USING (true);
+
+-- Politiques pour permettre aux clients de passer des commandes
+DROP POLICY IF EXISTS "Anyone can place an order" ON public.orders;
+CREATE POLICY "Anyone can place an order" ON public.orders FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone can add items to order" ON public.order_items;
+CREATE POLICY "Anyone can add items to order" ON public.order_items FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public can view their order" ON public.orders;
+CREATE POLICY "Public can view their order" ON public.orders FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public can view their order items" ON public.order_items;
+CREATE POLICY "Public can view their order items" ON public.order_items FOR SELECT USING (true);
 
 -- Trigger pour mettre à jour updated_at automatiquement
 CREATE OR REPLACE FUNCTION update_updated_at_column()

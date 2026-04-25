@@ -35,3 +35,32 @@ DROP POLICY IF EXISTS "Admin can delete order_items" ON public.order_items;
 CREATE POLICY "Admin can delete order_items"
 ON public.order_items FOR DELETE
 USING (true);
+
+-- Autoriser la création de commandes par tout le monde (clients)
+DROP POLICY IF EXISTS "Allow public to create orders" ON public.orders;
+CREATE POLICY "Allow public to create orders"
+ON public.orders FOR INSERT
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public to create order_items" ON public.order_items;
+CREATE POLICY "Allow public to create order_items"
+ON public.order_items FOR INSERT
+WITH CHECK (true);
+
+-- Permettre aux clients de voir leurs propres commandes (si authentifiés) ou via ID
+DROP POLICY IF EXISTS "Users can view their own orders" ON public.orders;
+CREATE POLICY "Users can view their own orders"
+ON public.orders FOR SELECT
+USING (true);
+
+-- Politiques pour la table livraisons
+ALTER TABLE public.deliveries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public to create deliveries" ON public.deliveries;
+CREATE POLICY "Allow public to create deliveries"
+ON public.deliveries FOR INSERT
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public can view deliveries" ON public.deliveries;
+CREATE POLICY "Public can view deliveries"
+ON public.deliveries FOR SELECT
+USING (true);
