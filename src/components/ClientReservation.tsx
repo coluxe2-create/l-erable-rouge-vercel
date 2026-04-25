@@ -127,7 +127,7 @@ export default function ClientReservation({ onNavigate, user }: ClientReservatio
               </div>
               <div className="space-y-2">
                 <h3 className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-main-text">Horaires</h3>
-                <p className="text-secondary-text font-serif italic text-sm">Ouvert tous les jours <br/> de 12:00 à 00:00</p>
+                <p className="text-secondary-text font-serif italic text-sm">Ouvert tous les jours <br/> de 08:00 à 00:00</p>
               </div>
             </div>
             <div className="p-10 bg-white border border-border-color space-y-6 shadow-[0_15px_30px_rgba(232,224,216,0.1)]">
