@@ -111,29 +111,57 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
     e.preventDefault();
     if (items.length === 0) return;
 
+    // Validation explicite
+    if (!firstName.trim()) {
+      setError('Veuillez entrer votre nom.');
+      window.scrollTo({ top: 300, behavior: 'smooth' });
+      return;
+    }
+    if (!phone.trim()) {
+      setError('Veuillez entrer votre numéro de téléphone.');
+      window.scrollTo({ top: 400, behavior: 'smooth' });
+      return;
+    }
+    if (orderType === 'livraison' && !address.trim()) {
+      setError('Veuillez indiquer votre adresse de livraison.');
+      window.scrollTo({ top: 500, behavior: 'smooth' });
+      return;
+    }
+
     setSubmitting(true);
     setError('');
     try {
+      console.log('[Order] Starting submission...', { firstName, orderType, itemsCount: items.length });
+      
       const orderData = {
         user_id: user?.id || null,
-        first_name: firstName || 'Client',
-        phone: phone || '',
-        delivery_address: orderType === 'livraison' ? address : '',
+        first_name: firstName.trim(),
+        phone: phone.trim(),
+        delivery_address: orderType === 'livraison' ? address.trim() : '',
         mode: orderType,
         total_price: finalTotal,
         status: 'en_attente',
         payment_method: paymentMethod,
-        special_notes: notes || '',
+        special_notes: notes.trim(),
       };
 
       // 1. Créer la commande
-      const { data: order, error: orderError } = await supabase
+      const { data: orders, error: orderError } = await supabase
         .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+        .insert([orderData])
+        .select();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('[Order] Supabase Error:', orderError);
+        throw new Error(orderError.message || 'Erreur lors de la création de la commande');
+      }
+
+      if (!orders || orders.length === 0) {
+        throw new Error('La commande n\'a pas pu être créée');
+      }
+
+      const order = orders[0];
+      console.log('[Order] Created successfully:', order.id);
 
       // 2. Créer les items de la commande
       const orderItems = items.map(item => ({
@@ -147,11 +175,27 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('[OrderItems] Supabase Error:', itemsError);
+        throw new Error(itemsError.message || 'Erreur lors de l\'ajout des articles');
+      }
+
+      // Si c'est une livraison, on s'assure qu'elle est aussi dans la table deliveries si elle existe
+      try {
+        if (orderType === 'livraison') {
+          await supabase.from('deliveries').insert([{
+            order_id: order.id,
+            delivery_address: address.trim(),
+            delivery_status: 'en attente'
+          }]);
+        }
+      } catch (delErr) {
+        // Optionnel : ne pas bloquer si la table deliveries n'existe pas ou a un problème
+        console.warn('Could not insert into deliveries table:', delErr);
+      }
 
       // Envoyer notification Telegram
       try {
-        // Associer les noms des produits pour la notification
         const notificationItems = items.map(item => ({
           name: item.name,
           quantity: item.quantity,
@@ -163,12 +207,13 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
         console.error('Erreur notification Telegram:', tgErr);
       }
 
+      console.log('[Order] Process complete');
       setLastOrderTotal(finalTotal);
       setOrderSuccess(true);
       clearCart();
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Erreur lors de la commande');
+      console.error('[Order] Submission failed:', err);
+      setError(err.message || 'Une erreur est survenue lors de la validation de votre commande. Veuillez réessayer.');
     } finally {
       setSubmitting(false);
     }
@@ -459,6 +504,12 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
                   <span className="text-2xl font-sans font-bold text-accent-red tracking-widest">{total.toFixed(0)} MAD</span>
                 </div>
               </div>
+
+              {error && (
+                <div className="p-4 bg-accent-red/10 border border-accent-red/20 text-accent-red text-[10px] font-sans font-bold uppercase tracking-widest text-center">
+                  {error}
+                </div>
+              )}
 
               <button
                 type="submit"
