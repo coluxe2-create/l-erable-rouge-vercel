@@ -949,9 +949,39 @@ function MenuView() {
   };
 
   const deleteItem = async (id: string) => {
-    if (window.confirm('Supprimer cet article ?')) {
-      await supabase.from('products').delete().eq('id', id);
-      fetchData();
+    const confirmed = window.confirm(
+      'Êtes-vous sûr de vouloir supprimer ce plat ?'
+    )
+    if (!confirmed) return
+
+    try {
+      // 1. D'abord supprimer les order_items liés pour éviter les erreurs de contrainte
+      await supabase
+        .from('order_items')
+        .delete()
+        .eq('product_id', id)
+
+      // 2. Ensuite supprimer le produit
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Erreur suppression:', error)
+        alert('Erreur : ' + error.message)
+        return
+      }
+
+      // 3. Mettre à jour la liste localement
+      setItems(prev => prev.filter(item => item.id !== id))
+      
+      // 4. Confirmation visuelle
+      alert('Plat supprimé avec succès ✓')
+      
+    } catch (err) {
+      console.error('Erreur inattendue:', err)
+      alert('Erreur inattendue lors de la suppression')
     }
   };
 
@@ -977,7 +1007,22 @@ function MenuView() {
               )}
               <div className="absolute top-4 right-4 flex gap-2">
                 <button onClick={() => handleOpenModal(item)} className="p-2 bg-black/60 hover:bg-[#8B1A1A] text-white rounded-lg transition-all backdrop-blur-md"><Edit2 className="w-4 h-4" /></button>
-                <button onClick={() => deleteItem(item.id)} className="p-2 bg-black/60 hover:bg-[#8B1A1A] text-white rounded-lg transition-all backdrop-blur-md"><Trash2 className="w-4 h-4" /></button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteItem(item.id)
+                  }}
+                  style={{
+                    padding: '8px',
+                    backgroundColor: 'rgba(139, 26, 26, 0.8)',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    color: 'white'
+                  }}
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-4">

@@ -1,16 +1,21 @@
 const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '';
-const TELEGRAM_CHAT_ID = '8642890342';
+const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8642890342';
 
 export async function sendTelegramNotification(
   message: string
 ): Promise<void> {
   if (!TELEGRAM_BOT_TOKEN) {
-    console.warn('Telegram token manquant');
+    console.error('ERREUR : VITE_TELEGRAM_BOT_TOKEN est manquant dans les variables d\'environnement.');
+    return;
+  }
+  
+  if (!TELEGRAM_CHAT_ID) {
+    console.error('ERREUR : VITE_TELEGRAM_CHAT_ID est manquant dans les variables d\'environnement.');
     return;
   }
   
   try {
-    await fetch(
+    const response = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: 'POST',
@@ -22,8 +27,15 @@ export async function sendTelegramNotification(
         })
       }
     );
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Erreur API Telegram:', errorData);
+    } else {
+      console.log('Notification Telegram envoyée avec succès');
+    }
   } catch (error) {
-    console.error('Erreur Telegram:', error);
+    console.error('Erreur réseau Telegram:', error);
   }
 }
 
