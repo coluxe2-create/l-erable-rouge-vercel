@@ -1,66 +1,103 @@
-const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '';
-const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8642890342';
+const BOT_TOKEN = '8791426645:AAHXp-CRIlsDAeXHtmvDi0J26vy3qUcQNoI'
 
-export async function sendTelegramNotification(
+const TELEGRAM_RECIPIENTS = [
+  '8642890342',
+  '6468967382'
+]
+
+async function sendToOne(
+  chatId: string,
   message: string
 ): Promise<void> {
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.error('ERREUR : VITE_TELEGRAM_BOT_TOKEN est manquant dans les variables d\'environnement.');
-    return;
-  }
-  
-  if (!TELEGRAM_CHAT_ID) {
-    console.error('ERREUR : VITE_TELEGRAM_CHAT_ID est manquant dans les variables d\'environnement.');
-    return;
-  }
-  
   try {
     const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
+          chat_id: chatId,
           text: message,
           parse_mode: 'HTML'
         })
       }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Erreur API Telegram:', errorData);
+    )
+    const result = await response.json()
+    if (!result.ok) {
+      console.warn(`Telegram erreur pour ${chatId}:`, result)
     } else {
-      console.log('Notification Telegram envoyée avec succès');
+      console.log(`Telegram envoyé à ${chatId} ✓`)
     }
   } catch (error) {
-    console.error('Erreur réseau Telegram:', error);
+    console.error(`Erreur Telegram ${chatId}:`, error)
   }
+}
+
+export async function sendTelegramNotification(
+  message: string
+): Promise<void> {
+  // Envoyer aux 2 comptes en parallèle
+  await Promise.all(
+    TELEGRAM_RECIPIENTS.map(chatId => 
+      sendToOne(chatId, message)
+    )
+  )
 }
 
 export function formatOrderMessage(
   order: any,
   items: any[]
 ): string {
-  const itemsList = items.map(item => 
-    `  • ${item.name || 'Produit'} x${item.quantity} — ${Math.round(Number(item.unit_price) * Number(item.quantity))} MAD`
-  ).join('\n');
+  const itemsList = items.map(item =>
+    `  • ${item.name} x${item.quantity} — ${Math.round(Number(item.unit_price) * Number(item.quantity))} MAD`
+  ).join('\n')
+
+  const modeEmoji = {
+    'livraison': '🛵',
+    'sur_place': '🪑',
+    'click_collect': '🥡'
+  }[order.mode] || '🚗'
+
+  const paymentEmoji = order.payment_method === 'carte' ? '💳' : '💵'
 
   return `
-🍁 <b>NOUVELLE COMMANDE — L'Érable Rouge</b>
+🍁 <b>NOUVELLE COMMANDE</b>
+<b>L'Érable Rouge — Agadir</b>
+━━━━━━━━━━━━━━━━━━━
 
 👤 <b>Client :</b> ${order.first_name || 'Client'}
 📞 <b>Téléphone :</b> ${order.phone || 'Non renseigné'}
-🚗 <b>Mode :</b> ${order.mode === 'livraison' ? '🛵 Livraison' : order.mode === 'sur place' ? '🪑 Sur place' : '🥡 Click & Collect'}
+${modeEmoji} <b>Mode :</b> ${order.mode || 'livraison'}
 📍 <b>Adresse :</b> ${order.delivery_address || 'Sur place'}
-💳 <b>Paiement :</b> ${order.payment_method === 'carte' ? '💳 Carte' : '💵 Espèces'}
+${paymentEmoji} <b>Paiement :</b> ${order.payment_method === 'carte' ? 'Carte bancaire' : 'Espèces'}
 
-🍽️ <b>Articles commandés :</b>
+🍽️ <b>Articles :</b>
 ${itemsList}
 
+━━━━━━━━━━━━━━━━━━━
 💰 <b>TOTAL : ${Math.round(order.total_price)} MAD</b>
-
 ⏰ ${new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Casablanca' })}
-  `.trim();
+  `.trim()
+}
+
+export function formatStatusMessage(
+  orderId: string,
+  newStatus: string,
+  clientName: string
+): string {
+  const statusEmoji: Record<string, string> = {
+    'en_preparation': '🔵 EN PRÉPARATION',
+    'en_route': '🛵 EN ROUTE',
+    'livre': '✅ LIVRÉ',
+    'annule': '❌ ANNULÉ'
+  }
+
+  return `
+🍁 <b>L'Érable Rouge</b>
+
+📦 Commande <b>#${orderId.slice(-4).toUpperCase()}</b>
+👤 Client : ${clientName}
+🔄 Nouveau statut : <b>${statusEmoji[newStatus] || newStatus}</b>
+⏰ ${new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Casablanca' })}
+  `.trim()
 }

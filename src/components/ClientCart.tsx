@@ -195,12 +195,11 @@ export default function ClientCart({ onNavigate, user }: ClientCartProps) {
 
       // Envoyer notification Telegram
       try {
-        const notificationItems = items.map(item => ({
+        const message = formatOrderMessage(orderData, items.map(item => ({
           name: item.name,
           quantity: item.quantity,
           unit_price: item.price
-        }));
-        const message = formatOrderMessage(orderData, notificationItems);
+        })));
         await sendTelegramNotification(message);
       } catch (tgErr) {
         console.error('Erreur notification Telegram:', tgErr);

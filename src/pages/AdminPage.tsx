@@ -35,7 +35,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { api } from '../services/api';
 import { MenuItem, Category, Order, Reservation, Slide } from '../types';
-import { sendTelegramNotification } from '../services/telegram';
+import { sendTelegramNotification, formatStatusMessage } from '../services/telegram';
 
 // --- ADMIN LOGIN COMPONENT ---
 function AdminLogin({ onLogin }: { onLogin: (token: string, user: any) => void }) {
@@ -768,20 +768,13 @@ function OrdersView({ showNotification, confirmAction }: { showNotification: (ms
     const { error } = await supabase.from('orders').update({ status }).eq('id', id);
     
     if (!error) {
-      const statusLabels: Record<string, string> = {
-        'en_preparation': '🔵 En préparation',
-        'en_route': '🛵 En route',
-        'livre': '✅ Livré',
-        'annule': '❌ Annulé'
-      };
-
-      try {
-        await sendTelegramNotification(
-          `🍁 <b>L'Érable Rouge</b>\n\nCommande #${id.slice(-4)} → ${statusLabels[status] || status}`
-        );
-      } catch (tgErr) {
-        console.error('Erreur Telegram:', tgErr);
-      }
+      const order = orders.find(o => o.id === id);
+      const message = formatStatusMessage(
+        id,
+        status,
+        order?.first_name || 'Client'
+      );
+      await sendTelegramNotification(message);
     }
   };
 
