@@ -73,7 +73,8 @@ export const api = {
       const { data, error } = await supabase
         .from('orders')
         .select('*, order_items(*, products(*))')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
       if (error) throw error;
       return data || [];
     },
@@ -84,7 +85,8 @@ export const api = {
         .from('orders')
         .select('*, order_items(*, products(*))')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
       if (error) throw error;
       return data || [];
     },
@@ -104,7 +106,8 @@ export const api = {
       const { data, error } = await supabase
         .from('reservations')
         .select('id, user_id, reservation_date, reservation_time, number_of_guests, status, special_requests, first_name, phone, created_at')
-        .order('reservation_date', { ascending: false });
+        .order('reservation_date', { ascending: false })
+        .limit(100);
       if (error) throw error;
       return data || [];
     },
@@ -115,7 +118,8 @@ export const api = {
         .from('reservations')
         .select('id, user_id, reservation_date, reservation_time, number_of_guests, status, special_requests, first_name, phone, created_at')
         .eq('user_id', user.id)
-        .order('reservation_date', { ascending: false });
+        .order('reservation_date', { ascending: false })
+        .limit(50);
       if (error) throw error;
       return data || [];
     },
@@ -132,7 +136,11 @@ export const api = {
   },
   deliveries: {
     getAll: async (): Promise<Delivery[]> => {
-      const { data, error } = await supabase.from('deliveries').select('*');
+      const { data, error } = await supabase
+        .from('deliveries')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
       if (error) throw error;
       return data || [];
     },

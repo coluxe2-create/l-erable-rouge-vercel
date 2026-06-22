@@ -357,7 +357,11 @@ function ClientsView({ showNotification, confirmAction }: { showNotification: (m
   }, []);
 
   const fetchClients = async () => {
-    const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase
+      .from('users')
+      .select('id, email, first_name, last_name, role, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
     if (data) setClients(data);
     setLoading(false);
   };
@@ -659,21 +663,37 @@ function DashboardView({ setActiveTab }: { setActiveTab: (tab: string) => void }
 
   useEffect(() => {
     async function fetchStats() {
-      const { data: orders } = await supabase.from('orders').select('*');
-      const { data: users } = await supabase.from('users').select('*');
+      // Fetch only essential columns needed for today's count and total revenue of all orders
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('created_at, total_price');
+        
+      // Fetch the 5 most recent orders separately with all details needed
+      const { data: recentOrdersData } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Fetch ONLY the count of users (HEAD request, 0 egress for user rows)
+      const { count: usersCount } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true });
       
-      if (orders) {
+      if (ordersData) {
         const today = new Date().toISOString().split('T')[0];
-        const todayOrders = orders.filter(o => o.created_at.startsWith(today));
-        const totalRevenue = orders.reduce((acc, o) => acc + Number(o.total_price), 0);
+        const todayOrders = ordersData.filter(o => o.created_at && o.created_at.startsWith(today));
+        const totalRevenue = ordersData.reduce((acc, o) => acc + Number(o.total_price || 0), 0);
         
         setStats({
           orders: todayOrders.length,
           revenue: totalRevenue,
-          clients: users?.length || 0
+          clients: usersCount || 0
         });
-        
-        setRecentOrders(orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5));
+      }
+
+      if (recentOrdersData) {
+        setRecentOrders(recentOrdersData);
       }
     }
     fetchStats();
@@ -750,7 +770,8 @@ function OrdersView({ showNotification, confirmAction }: { showNotification: (ms
       const { data } = await supabase
         .from('orders')
         .select('*, order_items(*, products(*))')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
       if (data) setOrders(data);
       setLoading(false);
     };
@@ -1182,7 +1203,8 @@ function ReservationsView({ showNotification }: { showNotification: (msg: string
     const { data } = await supabase
       .from('reservations')
       .select('id, user_id, reservation_date, reservation_time, number_of_guests, status, special_requests, first_name, phone, created_at')
-      .order('reservation_date', { ascending: false });
+      .order('reservation_date', { ascending: false })
+      .limit(100);
     if (data) setReservations(data);
     setLoading(false);
   };
